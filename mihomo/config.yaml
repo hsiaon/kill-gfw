@@ -1,0 +1,133 @@
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: debug
+ipv6: false
+
+external-controller: 0.0.0.0:9090
+external-ui: /etc/mihomo/ui
+secret: ''
+
+geodata-mode: true
+geox-url:
+  geoip: 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat'
+  geosite: 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat'
+  mmdb: 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb'
+geo-auto-update: true
+geo-update-interval: 24
+
+tun:
+  enable: true
+  stack: system
+  auto-route: true
+  route-exclude-address:
+    - 192.168.1.0/24
+    - 127.0.0.0/8
+  auto-detect-interface: true
+  strict-route: true
+  dns-hijack:
+    - any:53
+
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+    HTTP:
+      ports: [80, 8080-8888]
+      override-destination: true
+  skip-domain:
+    - "__wvjb_queue_message__"
+  skip-dst-address:
+    - 192.168.1.0/24
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 127.0.0.1/32
+    - 91.108.4.0/22
+    - 91.108.8.0/22
+    - 91.108.12.0/22
+    - 91.108.16.0/22
+    - 91.108.20.0/22
+    - 91.108.56.0/22
+    - 91.105.192.0/23
+    - 149.154.160.0/20
+    - 185.76.151.0/24
+
+dns:
+  enable: true
+  cache-algorithm: arc
+  listen: 0.0.0.0:53
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  nameserver-policy:
+    'geosite:cn': '223.5.5.5'
+    'geosite:gfw': '1.1.1.1'
+  nameserver:
+    - 223.5.5.5
+    - 223.6.6.6
+    - 1.1.1.1
+    - 8.8.8.8
+  fake-ip-filter:
+    - 'rule-set:filter'
+    - 'geosite:cn'
+
+proxy-providers:
+  kuromi:
+    type: http
+    url: ''
+    interval: 86400
+    path: ./proxy-providers/Kuromis.yaml
+
+proxy-groups:
+  - name: 'PROXY'
+    type: select
+    use:
+      - kuromi
+
+rule-providers:
+  filter:
+    behavior: domain
+    type: file
+    path: ./rule-providers/filter.domain.yaml
+  chn:
+    behavior: domain
+    type: file
+    path: ./rule-providers/chn.domain.yaml
+  ibkr:
+    behavior: domain
+    type: file
+    path: ./rule-providers/ibkr.domain.yaml
+  whatsapp:
+    behavior: domain
+    type: file
+    path: ./rule-providers/whatsapp.domain.yaml
+
+rules:
+  # DIRECT rules based on domain names
+  - DOMAIN-SUFFIX,zealotmat.uk,DIRECT
+  - DOMAIN-SUFFIX,cn,DIRECT
+  - RULE-SET,chn,DIRECT
+  - GEOSITE,apple-cn,DIRECT
+  - GEOSITE,cn,DIRECT
+
+  # PROXY rules based on domain names
+  - RULE-SET,ibkr,PROXY
+  - RULE-SET,whatsapp,PROXY
+  - GEOSITE,google,PROXY
+  - GEOSITE,openai,PROXY
+  - GEOSITE,netflix,PROXY
+  - GEOSITE,youtube,PROXY
+  - GEOSITE,gfw,PROXY
+
+  # DIRECT rules based on IP
+  - GEOIP,LAN,DIRECT
+  - GEOIP,CN,DIRECT
+
+  # PROXY rules based on IP
+  - GEOIP,TELEGRAM,PROXY,no-resolve
+  - GEOIP,NETFLIX,PROXY,no-resolve
+
+  # Default rule
+  - MATCH,PROXY
